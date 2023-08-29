@@ -18,78 +18,46 @@ export function formate(
   formatter: string | ((dateInfo: DateInfo) => string),
   isPad = false
 ): string {
-  if (!date) return "";
-  if (typeof formatter === "string") {
-    return getDateFromString(date, formatter, isPad);
-  }
-  if (typeof formatter === "function") {
-    return getDateFromFunc(date, formatter, isPad);
-  }
-  return "";
+  const formatterNormalization = formatterNomalize(formatter);
+  return formatterNormalization(getDateInfo(date, isPad));
 }
 
-function getDateInfo(date: Date, isPad = false): DateInfo {
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const hour = date.getHours();
-  const minute = date.getMinutes();
-  const second = date.getSeconds();
-  const yyyy = `${year}`;
-  let MM = `${month}`;
-  let dd = `${day}`;
-  let hh = `${hour}`;
-  let mm = `${minute}`;
-  let ss = `${second}`;
-  if (isPad) {
-    MM = month < 10 ? `0${MM}` : `${MM}`;
-    dd = day < 10 ? `0${dd}` : `${dd}`;
-    hh = hour < 10 ? `0${hh}` : `${hh}`;
-    mm = minute < 10 ? `0${mm}` : `${mm}`;
-    ss = second < 10 ? `0${ss}` : `${ss}`;
-  }
-  return {
-    year,
-    month,
-    day,
-    hour,
-    minute,
-    second,
-    yyyy,
-    MM,
-    dd,
-    hh,
-    mm,
-    ss,
+function formatterNomalize(
+  formatter: string | ((dateInfo: DateInfo) => string)
+): (dateInfo: DateInfo) => string {
+  if (typeof formatter === "function") return formatter;
+  return (dateInfo: DateInfo) => {
+    if (formatter === "date")
+      return `${dateInfo.yyyy}-${dateInfo.MM}-${dateInfo.dd}`;
+    if (formatter === "datetime")
+      return `${dateInfo.yyyy}-${dateInfo.MM}-${dateInfo.dd} ${dateInfo.hh}:${dateInfo.mm}:${dateInfo.ss}`;
+    formatter = formatter as string;
+    formatter = formatter.replace(/yyyy/, dateInfo.yyyy);
+    formatter = formatter.replace(/MM/, dateInfo.MM);
+    formatter = formatter.replace(/dd/, dateInfo.dd);
+    formatter = formatter.replace(/hh/, dateInfo.hh);
+    formatter = formatter.replace(/mm/, dateInfo.mm);
+    formatter = formatter.replace(/ss/, dateInfo.ss);
+    formatter = formatter.replace(/-pad/, "");
+    return formatter;
   };
 }
 
-function getDateFromString(
-  date: Date,
-  formatter: string,
-  isPad: boolean
-): string {
-  const { yyyy, MM, dd, hh, mm, ss } = getDateInfo(date, isPad);
-  if (formatter.includes("datetime")) {
-    return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}`;
-  }
-  if (formatter.includes("date")) {
-    return `${yyyy}-${MM}-${dd}`;
-  }
-  formatter = formatter.replace(/yyyy/, yyyy);
-  formatter = formatter.replace(/MM/, MM);
-  formatter = formatter.replace(/dd/, dd);
-  formatter = formatter.replace(/-pad/, "");
-  formatter = formatter.replace(/hh/, hh);
-  formatter = formatter.replace(/mm/, mm);
-  formatter = formatter.replace(/ss/, ss);
-  return formatter;
-}
-
-function getDateFromFunc(
-  date: Date,
-  formatter: (dateInfo: DateInfo) => string,
-  isPad: boolean
-): string {
-  return formatter(getDateInfo(date, isPad));
+function getDateInfo(date: Date, isPad = false): DateInfo {
+  const getPadString = (num: number) =>
+    isPad ? num.toString().padStart(2, "0") : num.toString();
+  return {
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+    hour: date.getHours(),
+    minute: date.getMinutes(),
+    second: date.getSeconds(),
+    yyyy: date.getFullYear().toString(),
+    MM: getPadString(date.getMonth() + 1),
+    dd: getPadString(date.getDate()),
+    hh: getPadString(date.getHours()),
+    mm: getPadString(date.getMinutes()),
+    ss: getPadString(date.getSeconds()),
+  };
 }
